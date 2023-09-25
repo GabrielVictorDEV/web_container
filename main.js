@@ -7,6 +7,21 @@ import { files } from './files';
 /** @type {import('@webcontainer/api').WebContainer}  */
 let webcontainerInstance;
 
+async function installDependencies() {
+  // Instalando dependencias; 
+  const installProcess = await webcontainerInstance.spawn('npm', ['install']);
+
+  // Mostra comandos que estão ocorrendo por trás; 
+  installProcess.output.pipeTo(new WritableStream({
+    write(data) {
+      console.log(data);
+    }
+  }));
+
+  // Wait for install command to exit
+  return installProcess.exit;
+}
+
 window.addEventListener('load', async () => {
   textareaEl.value = files['index.js'].file.contents;
 
@@ -14,8 +29,14 @@ window.addEventListener('load', async () => {
   webcontainerInstance = await WebContainer.boot();
   await webcontainerInstance.mount(files);
 
+  const exitCode = await installDependencies();
+  if (exitCode !== 0) {
+    throw new Error('Installation failed');
+  };
+
+  /* Mostrando JSON no console; 
   const packageJSON = await webcontainerInstance.fs.readFile('package.json', 'utf-8');
-  console.log(packageJSON);
+  console.log(packageJSON);*/
 });
 
 // Telas da aplicação
